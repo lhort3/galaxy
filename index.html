@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Announcement Machine</title>
+<style>
+  html,body {
+    margin:0;
+    height:100%;
+    background:#000;
+    color:#fff;
+    font-family:Arial, sans-serif;
+    overflow:hidden;
+  }
+
+  #background {
+    position:absolute;
+    top:0;left:0;right:0;bottom:0;
+    background:#000 center/cover no-repeat;
+  }
+
+  #overlayLogo {
+    position:absolute;
+    top:0;left:0;right:0;bottom:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.7);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s;
+  }
+
+  #overlayLogo.show {
+    opacity:1;
+    pointer-events:auto;
+  }
+
+  #overlayLogo img {
+    max-width:40%;
+    max-height:40%;
+  }
+
+  #main {
+    position:relative;
+    display:flex;
+    width:100%;
+    height:100%;
+  }
+
+  .left, .right {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    box-sizing:border-box;
+    border:2px solid #333;
+  }
+
+  .left {
+    background:rgba(0,0,0,0.7);
+    padding:20px;
+  }
+
+  .right {
+    background:rgba(10,10,10,0.9);
+    align-items:center;
+    justify-content:flex-start;
+    padding:20px;
+  }
+
+  /* audio grid */
+  #audioGrid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(3,1fr);
+    gap:10px;
+    flex:1;
+  }
+
+  .tile {
+    background:#111;
+    border:2px solid #555;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    cursor:pointer;
+    text-align:center;
+    user-select:none;
+    padding:10px;
+  }
+
+  .tile:hover {
+    background:#222;
+  }
+
+  #time {
+    font-size:100px;
+    font-weight:bold;
+    margin-top:40px;
+    margin-bottom:10px;
+  }
+
+  #date {
+    font-size:24px;
+    margin-bottom:40px;
+  }
+
+  /* square action buttons grid */
+  .action-buttons {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+    gap:15px;
+    width:100%;
+    justify-items:center;
+  }
+
+  .action-button {
+    width:150px;
+    height:150px;
+    color:#fff;
+    font-size:20px;
+    font-weight:bold;
+    border:2px solid #000;
+    cursor:pointer;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:#f00;
+  }
+
+  .action-button:hover {
+    filter:brightness(1.2);
+  }
+
+  /* lock screen */
+  #lockScreen {
+    position:absolute;
+    top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.8);
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+
+  #lockScreen.show {
+    display:flex;
+  }
+
+  #passDisplay {
+    font-size:40px;
+    margin-bottom:20px;
+  }
+
+  #keypad {
+    display:grid;
+    grid-template-columns:repeat(3,80px);
+    grid-gap:10px;
+  }
+
+  #keypad button {
+    background:#333;
+    border:2px solid #777;
+    font-size:28px;
+    padding:20px;
+  }
+
+  #confirmBox {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:#111;
+    border:2px solid #555;
+    padding:20px;
+    display:none;
+    text-align:center;
+  }
+
+  #confirmBox.show {
+    display:block;
+  }
+
+  #confirmBox button {
+    background:#0a0;
+    border:2px solid #060;
+    margin:10px;
+    font-size:22px;
+    padding:10px 20px;
+  }
+
+  #confirmBox button.no {
+    background:#a00;
+    border-color:#600;
+  }
+</style>
+</head>
+<body>
+<div id="background"></div>
+
+<div id="overlayLogo"><img id="logoImg" src=""></div>
+
+<div id="main">
+  <div class="left">
+    <div id="audioGrid"></div>
+  </div>
+  <div class="right">
+    <div id="time">00:00</div>
+    <div id="date">Thursday, 12 October 2025</div>
+
+    <div class="action-buttons">
+      <!-- DUPLICATE THESE AS NEEDED -->
+      <button class="action-button" 
+        data-sound="https://example.com/emergency.mp3" 
+        style="background:#f00;border-color:#800;">
+        fire alarm
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="lockScreen">
+  <div id="passDisplay"></div>
+  <div id="keypad"></div>
+</div>
+
+<div id="confirmBox">
+  <div id="confirmText"></div>
+  <button id="confirmYes">YES</button>
+  <button id="confirmNo" class="no">NO</button>
+</div>
+
+<audio id="audioPlayer"></audio>
+
+<script>
+const GITHUB_BASE = "https://raw.githubusercontent.com/lhort3/galaxy/main/"; // change this
+const SETTINGS_URL = GITHUB_BASE + "settings.json";
+const AUDIOS_URL = GITHUB_BASE + "audios.json";
+
+let settings = { wallpaper:"", logo:"", password:"1234", lockoutTimer:60 };
+let audios = [];
+let page = 0;
+let lockTimer;
+let passInput = "";
+let locked = false;
+
+const bg = document.getElementById("background");
+const logoOverlay = document.getElementById("overlayLogo");
+const logoImg = document.getElementById("logoImg");
+const audioGrid = document.getElementById("audioGrid");
+const lockScreen = document.getElementById("lockScreen");
+const passDisplay = document.getElementById("passDisplay");
+const keypad = document.getElementById("keypad");
+const confirmBox = document.getElementById("confirmBox");
+const confirmText = document.getElementById("confirmText");
+const audioPlayer = document.getElementById("audioPlayer");
+
+async function loadSettings(){
+  try {
+    const s = await fetch(SETTINGS_URL);
+    settings = Object.assign(settings, await s.json());
+  } catch(e){ console.log("settings failed"); }
+  if(settings.wallpaper) bg.style.backgroundImage = `url("${settings.wallpaper}")`;
+  if(settings.logo) logoImg.src = settings.logo;
+}
+async function loadAudios(){
+  try {
+    const a = await fetch(AUDIOS_URL);
+    audios = await a.json();
+  } catch(e){ console.log("audios failed"); }
+  renderAudioGrid();
+}
+function renderAudioGrid(){
+  audioGrid.innerHTML="";
+  const start = page*7;
+  const visible = audios.slice(start,start+7);
+  visible.forEach(a=>{
+    const d = document.createElement("div");
+    d.className="tile";
+    d.textContent=a.name;
+    d.onclick=()=>showConfirm(a);
+    audioGrid.appendChild(d);
+  });
+  const prev = document.createElement("div");
+  prev.className="tile";
+  prev.textContent="<< BACK";
+  prev.onclick=()=>{ if(page>0){ page--; renderAudioGrid(); } };
+  audioGrid.appendChild(prev);
+  const next = document.createElement("div");
+  next.className="tile";
+  next.textContent="NEXT >>";
+  next.onclick=()=>{ if((page+1)*7<audios.length){ page++; renderAudioGrid(); } };
+  audioGrid.appendChild(next);
+}
+function showConfirm(a){
+  confirmBox.classList.add("show");
+  confirmText.textContent = `The track piece "${a.name}" has been selected, announce now?`;
+  document.getElementById("confirmYes").onclick=()=>{
+    confirmBox.classList.remove("show");
+    audioPlayer.src=a.mp3;
+    audioPlayer.play();
+    resetTimer();
+  };
+  document.getElementById("confirmNo").onclick=()=>{
+    confirmBox.classList.remove("show");
+    resetTimer();
+  };
+}
+
+function buildKeypad(){
+  const keys=["1","2","3","4","5","6","7","8","9","0","back","enter"];
+  keys.forEach(k=>{
+    const b=document.createElement("button");
+    if(k==="back") b.textContent="⌫";
+    else if(k==="enter") b.textContent="↵";
+    else b.textContent=k;
+    b.onclick=()=>pressKey(k);
+    keypad.appendChild(b);
+  });
+}
+function pressKey(k){
+  if(k==="back") passInput=passInput.slice(0,-1);
+  else if(k==="enter") checkPassword();
+  else passInput+=k;
+  passDisplay.textContent=passInput.replace(/./g,"*");
+}
+function checkPassword(){
+  if(passInput===settings.password){
+    unlock();
+  } else {
+    passDisplay.textContent="WRONG";
+    passInput="";
+  }
+}
+function lock(){
+  locked=true;
+  logoOverlay.classList.add("show");
+  setTimeout(()=>{ lockScreen.classList.add("show"); },500);
+}
+function unlock(){
+  locked=false;
+  logoOverlay.classList.remove("show");
+  lockScreen.classList.remove("show");
+  passInput="";
+  resetTimer();
+}
+function resetTimer(){
+  clearTimeout(lockTimer);
+  lockTimer=setTimeout(lock,settings.lockoutTimer*1000);
+}
+function updateClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,"0");
+  const m=String(now.getMinutes()).padStart(2,"0");
+  document.getElementById("time").textContent=`${h}:${m}`;
+  document.getElementById("date").textContent=now.toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+}
+setInterval(updateClock,1000);
+
+["click","mousemove","keydown","touchstart"].forEach(e=>window.addEventListener(e,()=>{if(!locked)resetTimer();}));
+
+buildKeypad();
+loadSettings();
+loadAudios();
+updateClock();
+resetTimer();
+
+// handle duplicable action buttons
+document.querySelectorAll(".action-button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    const src = btn.dataset.sound;
+    if(src){
+      audioPlayer.src = src;
+      audioPlayer.play();
+      resetTimer();
+    }
+  });
+});
+</script>
+</body>
+</html>
