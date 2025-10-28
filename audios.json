@@ -1,0 +1,45 @@
+[
+  {
+    "name": "Fire Drill",
+    "mp3": "https://example.com/audios/fire_drill.mp3",
+    "icon": "https://example.com/icons/fire.png"
+  },
+  {
+    "name": "All Clear",
+    "mp3": "https://example.com/audios/all_clear.mp3",
+    "icon": "https://example.com/icons/clear.png"
+  },
+  {
+    "name": "Lockdown",
+    "mp3": "https://example.com/audios/lockdown.mp3",
+    "icon": "https://example.com/icons/lock.png"
+  },
+  {
+    "name": "Intruder Alert",
+    "mp3": "https://example.com/audios/intruder.mp3",
+    "icon": "https://example.com/icons/intruder.png"
+  },
+  {
+    "name": "Evacuation",
+    "mp3": "https://example.com/audios/evacuate.mp3",
+    "icon": "https://example.com/icons/evac.png"
+  },
+  {
+    "name": "Weather Warning",
+    "mp3": "https://example.com/audios/weather.mp3",
+    "icon": "https://example.com/icons/weather.png"
+  },
+  {
+    "name": "Test Announcement",
+    "mp3": "https://example.com/audios/test.mp3",
+    "icon": "https://example.com/icons/test.png"
+  },
+  {
+    "name": "Closing Time",
+    "mp3": "https://example.com/audios/closing.mp3"
+  },
+  {
+    "name": "Welcome Message",
+    "mp3": "https://example.com/audios/welcome.mp3"
+  }
+]
