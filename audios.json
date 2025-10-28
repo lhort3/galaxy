@@ -20,7 +20,7 @@
     "icon": "https://example.com/icons/intruder.png"
   },
   {
-    "name": "Evacuation",
+    "name": "EvacuationNO",
     "mp3": "https://example.com/audios/evacuate.mp3",
     "icon": "https://example.com/icons/evac.png"
   },
@@ -30,9 +30,9 @@
     "icon": "https://example.com/icons/weather.png"
   },
   {
-    "name": "Test Announcement",
-    "mp3": "https://example.com/audios/test.mp3",
-    "icon": "https://example.com/icons/test.png"
+    "name": "Evacuation",
+    "mp3": "http://raw.githubusercontent.com/lhort3/galaxy/main/PA%20Announcement%20%20-%20Emergency%20evacuation%20sound%20effect.mp3",
+    "icon": "https://noicon.icon"
   },
   {
     "name": "Closing Time",
